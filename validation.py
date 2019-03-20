@@ -47,12 +47,12 @@ def validate_clustering(groundTruths, results, k_list):
         cond_entr = []
         avg_fscore = []
         avg_cEnt = []
+        i = 0
         #for each segmented image
         for result_img in results[k]:
             f = []
             cent = []
             img = result_img.reshape(-1)
-            i = 0
             #get fscore and entropy for each gt available for this image
             for gt in groundTruths[i]:
                 gt = gt.reshape(-1)
@@ -60,12 +60,12 @@ def validate_clustering(groundTruths, results, k_list):
                 contingency_mat= contingency_matrix(gt, img)
                 f.append(f_measure(contingency_mat))
                 cent.append(conditional_entropy(contingency_mat, len(gt)))
-            fscore.append(f);
-            cond_entr.append(cent);
+            fscore.append(f)
+            cond_entr.append(cent)
             avg_fscore.append(np.mean(f))
             avg_cEnt.append(np.mean(cent))
             i = i+ 1
-        total_fscore.append(fscore);
+        total_fscore.append(fscore)
         total_cEntropy.append(cond_entr)
         tot_avg_fscore.append(avg_fscore)
         tot_avg_cEntropy.append(avg_cEnt)

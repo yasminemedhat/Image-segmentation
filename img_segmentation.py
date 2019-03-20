@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 17 13:29:04 2019
-
-@author: lenovo
-"""
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +5,6 @@ import matplotlib.image as img
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
 import imageio
-from skimage import img_as_uint
 from validation import validate_clustering
 
 #read images and return two lists; images and their names, each image is 381*481
@@ -48,7 +40,7 @@ def read_groundTruth(path):
 #display each image with its ground truth images
 def display_img_with_groundT(images, gt, index):
     n = len(gt[index]) + 1
-    fig, ax = plt.subplots(1, n)
+    fig, ax = plt.subplots(1, n, figsize=(15,15))
     ax[0].imshow(images[index])
     for i in range(len(gt[index])):
         ax[i+1].imshow(gt[index][i])
@@ -79,23 +71,6 @@ def diff_kmeans(data, n_clusters_list):
         results.append(Kmeans(data, k))
     return results
 
-#save the results of the the kmeans clustering
-def write_results(path, results, img_names, k_list):
-    i = 0
-    for k in k_list:
-        print("saving results of kmeans k =", k)
-        dir = os.path.join(path, str(k))
-        #make a new directory for each different k results
-        if not os.path.exists(dir):
-            os.makedirs(dir);
-        j = 0;
-        for image in results[i]:
-            rimg = img_as_uint(image)
-            imageio.imwrite(os.path.join(dir, img_names[j] + '.png'), rimg)
-            j = j + 1;
-        i = i + 1
-    print("all result saved!")
-
 #read saved kmeans clustering results directly
 def read_kmeans_results(path):
     files = [f[:-4] for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f.endswith('png')]
@@ -108,22 +83,11 @@ def read_kmeans_results(path):
         results.append(img)
     return results
  
-#convert saved results to int32 so it could be displayed
-def convert_results_to_int32(results):    
-    converted_list = []
-    conv_arr = []    
-    for r in results:
-        for arr in r:
-            conv_arr.append(arr.astype(np.int32))
-        converted_list.append(conv_arr)
-    return converted_list
-
-
 #display a selected image with the segmented image after performing kmeans clustering wit each k in k_list
 def display_img_with_segmented_img(images, filenames, clustered_imgs, index, k_list):
     #get number of images to be displayed; real image plus segmented image for each k in kmeans
     n = len(k_list)+1
-    fig, ax = plt.subplots(1, n)
+    fig, ax = plt.subplots(1, n, figsize=(20,5))
     fig.suptitle('image: ' + filenames[index])
     ax[0].imshow(images[index]) 
     for i in range(len(k_list)):
@@ -137,19 +101,24 @@ def main():
     path2 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\groundTruth"
     img_names, images = read_images(path1)
     gt = read_groundTruth(path2)
-    for i in range(10):
+    for i in range(50):
         display_img_with_groundT(images, gt, i)
-    k_list = [3]
+   
+    k_list = [3, 5, 7, 9, 11]
     kmeans_results = diff_kmeans(images, k_list)
-    path3= r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\kmeans_results"
-    write_results(path3, kmeans_results, img_names, k_list)
-    display_img_with_segmented_img(images, img_names, kmeans_results, 0, k_list)
-    path4=r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\kmeans_results"
-    #to read saved results directly
-    saved_results = []
-    for k in k_list:
-        res = read_kmeans_results(os.path.join(path4,str(k)))
-        saved_results.append(res)
-    saved_results = convert_results_to_int32(saved_results)
-    display_img_with_segmented_img(images, img_names, saved_results, 0, k_list)
-    total_fscore, avg_fscore, total_cEntropy, avg_cEntropy = validate_clustering(gt, saved_results, k_list)
+    
+    for i in range(50):
+        display_img_with_segmented_img(images, img_names, kmeans_results, i, k_list)
+    #get scores
+    total_fscore, avg_fscore, total_cEntropy, avg_cEntropy = validate_clustering(gt, kmeans_results, k_list)
+    #plot validation results
+    for i in range(len(k_list)):
+        plt.figure(figsize=(20,10))
+        plt.title('K = ' + str(k_list[i]))
+        plt.plot(avg_fscore[i], label = 'Average F-measure')
+        plt.plot(avg_cEntropy[i], label = 'Average Conditional Entropy')
+        plt.legend()
+        plt.show()
+        print('With k = ' , k_list[i])
+        print('Average F-measure over dataset : ', np.mean(avg_fscore[i]))
+        print('Average Conditional entropy over dataset : ', np.mean(avg_cEntropy[i]))
