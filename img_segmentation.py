@@ -60,12 +60,12 @@ def Kmeans(data, n_clusters):
     i = 0
     for image in data:
         #unroll image and represent it as one row of pixels eac pixel has 3 dimensions RGB
-        img_unrolled = image.reshape(image.shape[0]*image.shape[1],image.shape[2])
-        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(img_unrolled)
+        img_unrolled = image.reshape(image.shape[0]*image.shape[1],image.shape[2])/255
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0,n_jobs=-1).fit_predict(img_unrolled)
         #append the labels after reshaping to the shape of the real image 321*481
         #kmeans.labels_.reshape(image.shape[:-1]))
         
-        clusters.append(kmeans.labels_.reshape(image.shape[:-1]))
+        clusters.append(kmeans.reshape(image.shape[:-1]))
         i = i + 1
         if i % 25 == 0:
             print(i*2,"%" ,"of images clustered")
@@ -133,23 +133,48 @@ def display_img_with_segmented_img(images, filenames, clustered_imgs, index, k_l
 
 
 def main():  
+    
+  #yasmine's paths  
     path1 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\images"   
     path2 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\groundTruth"
-    img_names, images = read_images(path1)
-    gt = read_groundTruth(path2)
+    
+  #loujaina's paths
+    path1L=r"D:\College\Term 8\Pattern Recognition\Project 2\images"
+    path2L=r"D:\College\Term 8\Pattern Recognition\Project 2\groundtruth"
+   
+    img_names, images = read_images(path1L)
+    gt = read_groundTruth(path2L)
+    
     for i in range(10):
         display_img_with_groundT(images, gt, i)
-    k_list = [3]
+    k_list = [3,5,7,9,11] 
     kmeans_results = diff_kmeans(images, k_list)
-    path3= r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\kmeans_results"
-    write_results(path3, kmeans_results, img_names, k_list)
+    
     display_img_with_segmented_img(images, img_names, kmeans_results, 0, k_list)
-    path4=r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\kmeans_results"
-    #to read saved results directly
-    saved_results = []
-    for k in k_list:
-        res = read_kmeans_results(os.path.join(path4,str(k)))
-        saved_results.append(res)
-    saved_results = convert_results_to_int32(saved_results)
-    display_img_with_segmented_img(images, img_names, saved_results, 0, k_list)
-    total_fscore, avg_fscore, total_cEntropy, avg_cEntropy = validate_clustering(gt, saved_results, k_list)
+   
+    total_fscore, avg_fscore, total_cEntropy, avg_cEntropy = validate_clustering(gt, kmeans_results, k_list)
+    
+    
+    #get best k (display good and bad results)
+    fmeasure=np.array(avg_fscore) 
+    fmeasure=fmeasure.T #rows->different images, columns->different ks
+    
+    i=0
+    for row in fmeasure:
+        maximum=np.argmax(row) #maximum f-score (best)
+        minimum=np.argmin(row) #worst f-score
+        print(img_names[i],"best k=",k_list[maximum],"worst k=",k_list[minimum])
+        fig, ax = plt.subplots(1, 4)
+        ax[0].imshow(images[i]) 
+        ax[1].set_title('Best:K = ' + str(k_list[maximum]));
+        ax[1].imshow(kmeans_results[maximum][i]);
+        ax[2].set_title('Worst:K = ' + str(k_list[minimum]));
+        ax[2].imshow(kmeans_results[minimum][i]);
+        ax[3].set_title('Groundtruh');
+        ax[3].imshow(gt[i][0]);       
+        plt.show()   
+        if (row[maximum]>0.5):
+            print("Best f-score is less than 0.5 ->not good")
+        print("\n")
+        i+=1
+            
