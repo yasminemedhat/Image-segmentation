@@ -1,14 +1,3 @@
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.image as img
-from scipy.io import loadmat
-from sklearn.cluster import KMeans
-import imageio
-from validation import validate_clustering
-from sklearn.cluster import SpectralClustering
-from skimage.transform import rescale, resize
-
 #read images and return two lists; images and their names, each image is 381*481
 def read_images(path):
     #list to hold images
@@ -111,20 +100,6 @@ def ncut_clustering(images, k):
         i+=1
     return result
 
-#include x and y position to utilize the spatial property
-def kmeans_with_spatial(data, k_list):
-    res =[]
-    for image in data:
-        n = image.shape[0]
-        m = image.shape[1]
-        y = np.arange(n)
-        x = np.arange(m)
-        xmat, ymat = np.meshgrid(x,y)
-        image_with_axis = np.concatenate((ymat.reshape(n,m,1), xmat.reshape(n,m,1), image), axis=2)
-        res.append(image_with_axis)
-    
-    return diff_kmeans(res, k_list)
-
 def main():  
     path1 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\images"   
     path2 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\groundTruth"
@@ -155,28 +130,7 @@ def main():
     #kmeans on the best k
     k = [3]
     path3 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\test_img"
-    path4 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\gt2"
-    path5 = r"E:\Documents\Term 8\Pattern Recognition\assignments\proj2\img2"
     t_img_names, test_images = read_images(path3)
-    gt_test = read_groundTruth(path4)
     kmeans_results = diff_kmeans(test_images, k)
     for i in range(50):
         display_img_with_segmented_img(test_images, img_names, kmeans_results, i, k)
-     
-        
-    #kmeans using spatial 
-    t_img_names2, test_images2 = read_images(path5)
-    gt_test = read_groundTruth(path4)
-    kmeans_spatial_results =  kmeans_with_spatial(test_images2[:5], k)
-    total_fscore2, avg_fscore2, total_cEntropy2, avg_cEntropy2 = validate_clustering(gt_test, kmeans_spatial_results, k)
-    
-        
-    for i in range(5):
-        fig, ax = plt.subplots(1, 2)
-        ax[0].imshow(test_images2[i]) 
-        ax[1].set_title("Kmeans");
-        ax[1].imshow(kmeans_spatial_results[0][i])
-        plt.show()   
-        print("Average f-score:")
-        print("Kmeans:",avg_fscore2[0][i])
-        print("\n\n")
